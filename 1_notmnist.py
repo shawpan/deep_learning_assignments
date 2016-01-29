@@ -11,7 +11,7 @@
 # 
 # This notebook uses the [notMNIST](http://yaroslavvb.blogspot.com/2011/09/notmnist-dataset.html) dataset to be used with python experiments. This dataset is designed to look like the classic [MNIST](http://yann.lecun.com/exdb/mnist/) dataset, while looking a little more like real data: it's a harder task, and the data is a lot less 'clean' than MNIST.
 
-# In[2]:
+# In[73]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -20,6 +20,7 @@ import numpy as np
 import os
 import sys
 import tarfile
+from hashlib import sha1
 from IPython.display import display, Image
 from scipy import ndimage
 from sklearn.linear_model import LogisticRegression
@@ -29,7 +30,7 @@ from six.moves import cPickle as pickle
 
 # First, we'll download the dataset to our local machine. The data consists of characters rendered in a variety of fonts on a 28x28 image. The labels are limited to 'A' through 'J' (10 classes). The training set has about 500k and the testset 19000 labelled examples. Given these sizes, it should be possible to train models quickly on any machine.
 
-# In[3]:
+# In[2]:
 
 url = 'http://yaroslavvb.com/upload/notMNIST/'
 
@@ -52,7 +53,7 @@ test_filename = maybe_download('notMNIST_small.tar.gz', 8458043)
 # Extract the dataset from the compressed .tar.gz file.
 # This should give you a set of directories, labelled A through J.
 
-# In[4]:
+# In[3]:
 
 num_classes = 10
 
@@ -86,7 +87,7 @@ test_folders = extract(test_filename)
 
 # ## Solution
 
-# In[5]:
+# In[4]:
 
 def display_sample_images(data_folders):
   for folder in data_folders:
@@ -106,7 +107,7 @@ display_sample_images(test_folders)
 # 
 # A few images might not be readable, we'll just skip them.
 
-# In[6]:
+# In[5]:
 
 image_size = 28  # Pixel width and height.
 pixel_depth = 255.0  # Number of levels per pixel.
@@ -165,7 +166,7 @@ test_dataset, test_labels = load(test_folders, 18000, 20000)
 
 # ## Solution
 
-# In[7]:
+# In[6]:
 
 def display_sample_images_from_dataset(dataset, labels, sample_size):
   image_samples = np.random.randint(dataset.shape[0],size=sample_size)
@@ -184,7 +185,7 @@ display_sample_images_from_dataset(test_dataset, test_labels, 10)
 
 # Next, we'll randomize the data. It's important to have the labels well shuffled for the training and test distributions to match.
 
-# In[8]:
+# In[7]:
 
 np.random.seed(133)
 def randomize(dataset, labels):
@@ -205,7 +206,7 @@ test_dataset, test_labels = randomize(test_dataset, test_labels)
 
 # ## Solution
 
-# In[9]:
+# In[8]:
 
 display_sample_images_from_dataset(train_dataset, train_labels, 10)
 
@@ -221,7 +222,7 @@ display_sample_images_from_dataset(test_dataset, test_labels, 10)
 
 # ## Solution
 
-# In[21]:
+# In[9]:
 
 def get_class_distribution(dataset, labels):
   class_instances_count = np.zeros(num_classes)
@@ -242,7 +243,7 @@ print 'sd =', class_distribution.std()
 # 
 # Also create a validation dataset for hyperparameter tuning.
 
-# In[22]:
+# In[10]:
 
 train_size = 200000
 valid_size = 10000
@@ -257,7 +258,7 @@ print('Validation', valid_dataset.shape, valid_labels.shape)
 
 # Finally, let's save the data for later reuse:
 
-# In[23]:
+# In[11]:
 
 pickle_file = 'notMNIST.pickle'
 
@@ -278,7 +279,7 @@ except Exception as e:
   raise
 
 
-# In[24]:
+# In[12]:
 
 statinfo = os.stat(pickle_file)
 print('Compressed pickle size:', statinfo.st_size)
@@ -295,6 +296,52 @@ print('Compressed pickle size:', statinfo.st_size)
 # - What about near duplicates between datasets? (images that are almost identical)
 # - Create a sanitized validation and test set, and compare your accuracy on those in subsequent assignments.
 # ---
+
+# ## Solution
+
+# In[48]:
+
+
+def get_count_exact_overlaps(dataset1, dataset2):
+  dataset1_hash = [
+                   sha1(dataset1_instance).digest() 
+                   for dataset1_instance in dataset1
+                  ]
+  dataset2_hash = [
+                   sha1(dataset2_instance).digest() 
+                   for dataset2_instance in dataset2
+                  ]
+  return np.intersect1d(dataset1_hash, dataset2_hash).size
+    
+print 'Count of exact overlaping instances between valid and train dataset : ' + `get_count_exact_overlaps(valid_dataset, train_dataset)`
+print 'Count of exact overlaping instances between test and train dataset : ' + `get_count_exact_overlaps(test_dataset, train_dataset)`
+
+
+# In[72]:
+
+# Get hash on similarity rather than strict matching
+# i.e, find near duplicates instead of strict duplicates
+def get_custom_hash(instance):
+  difference = []
+  for row in range(0, 28):
+    for col in range(0, 27):
+      difference.append(instance[col][row]  > instance[col + 1][row])
+  return sha1(np.array(difference).astype(int))
+
+def get_count_overlaps(dataset1, dataset2):
+  dataset1_hash = [
+                   get_custom_hash(dataset1_instance).digest() 
+                   for dataset1_instance in dataset1
+                  ]
+  dataset2_hash = [
+                   get_custom_hash(dataset2_instance).digest() 
+                   for dataset2_instance in dataset2
+                  ]
+  return np.intersect1d(dataset1_hash, dataset2_hash).size
+    
+print 'Count of overlaping instances between valid and train dataset : ' + `get_count_overlaps(valid_dataset, train_dataset)`
+print 'Count of overlaping instances between test and train dataset : ' + `get_count_overlaps(test_dataset, train_dataset)`
+
 
 # ---
 # Problem 6
