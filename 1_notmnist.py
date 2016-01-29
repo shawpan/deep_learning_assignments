@@ -11,7 +11,7 @@
 # 
 # This notebook uses the [notMNIST](http://yaroslavvb.blogspot.com/2011/09/notmnist-dataset.html) dataset to be used with python experiments. This dataset is designed to look like the classic [MNIST](http://yann.lecun.com/exdb/mnist/) dataset, while looking a little more like real data: it's a harder task, and the data is a lot less 'clean' than MNIST.
 
-# In[73]:
+# In[1]:
 
 # These are all the modules we'll be using later. Make sure you can import them
 # before proceeding further.
@@ -166,7 +166,7 @@ test_dataset, test_labels = load(test_folders, 18000, 20000)
 
 # ## Solution
 
-# In[6]:
+# In[15]:
 
 def display_sample_images_from_dataset(dataset, labels, sample_size):
   image_samples = np.random.randint(dataset.shape[0],size=sample_size)
@@ -185,7 +185,7 @@ display_sample_images_from_dataset(test_dataset, test_labels, 10)
 
 # Next, we'll randomize the data. It's important to have the labels well shuffled for the training and test distributions to match.
 
-# In[7]:
+# In[16]:
 
 np.random.seed(133)
 def randomize(dataset, labels):
@@ -206,7 +206,7 @@ test_dataset, test_labels = randomize(test_dataset, test_labels)
 
 # ## Solution
 
-# In[8]:
+# In[17]:
 
 display_sample_images_from_dataset(train_dataset, train_labels, 10)
 
@@ -222,7 +222,7 @@ display_sample_images_from_dataset(test_dataset, test_labels, 10)
 
 # ## Solution
 
-# In[9]:
+# In[18]:
 
 def get_class_distribution(dataset, labels):
   class_instances_count = np.zeros(num_classes)
@@ -299,7 +299,7 @@ print('Compressed pickle size:', statinfo.st_size)
 
 # ## Solution
 
-# In[48]:
+# In[19]:
 
 
 def get_count_exact_overlaps(dataset1, dataset2):
@@ -317,7 +317,7 @@ print 'Count of exact overlaping instances between valid and train dataset : ' +
 print 'Count of exact overlaping instances between test and train dataset : ' + `get_count_exact_overlaps(test_dataset, train_dataset)`
 
 
-# In[72]:
+# In[20]:
 
 # Get hash on similarity rather than strict matching
 # i.e, find near duplicates instead of strict duplicates
@@ -341,6 +341,45 @@ def get_count_overlaps(dataset1, dataset2):
     
 print 'Count of overlaping instances between valid and train dataset : ' + `get_count_overlaps(valid_dataset, train_dataset)`
 print 'Count of overlaping instances between test and train dataset : ' + `get_count_overlaps(test_dataset, train_dataset)`
+
+
+# In[39]:
+
+def get_dataset_hash(dataset):
+  return [
+          sha1(dataset_instance).digest() 
+          for dataset_instance in dataset
+         ]
+
+train_dataset_hash = get_dataset_hash(train_dataset)
+valid_dataset_hash = get_dataset_hash(valid_dataset)
+test_dataset_hash = get_dataset_hash(test_dataset)
+
+duplicates_in_train_and_valid_dataset = np.intersect1d(train_dataset_hash, valid_dataset_hash)
+duplicates_in_train_and_test_dataset = np.intersect1d(train_dataset_hash, test_dataset_hash)
+duplicates_in_valid_and_test_dataset = np.intersect1d(test_dataset_hash, valid_dataset_hash)
+
+duplicates = np.hstack(
+                       (duplicates_in_train_and_valid_dataset,
+                        duplicates_in_train_and_test_dataset,
+                        duplicates_in_valid_and_test_dataset)
+                      )
+
+def get_sanitize(dataset, dataset_hash, exclude_hash):
+  return np.array([
+                   dataset[index] for index in 
+                   np.arange(dataset.shape[0]) if
+                   dataset_hash[index] not in 
+                   exclude_hash
+                 ])
+
+sanitized_valid_dataset = get_sanitize(valid_dataset, valid_dataset_hash, duplicates)
+sanitized_test_dataset = get_sanitize(test_dataset, test_dataset_hash, duplicates)
+
+print 'original valid dataset shape',  valid_dataset.shape
+print 'sanitized valid dataset shape', sanitized_valid_dataset.shape
+print 'original test dataset shape',  test_dataset.shape
+print 'sanitized test dataset shape', sanitized_test_dataset.shape
 
 
 # ---
