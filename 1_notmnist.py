@@ -395,7 +395,9 @@ print 'sanitized test dataset shape', sanitized_test_dataset.shape
 # 
 # ---
 
-# In[61]:
+# ## Solution
+
+# In[63]:
 
 
 def get_classifier(dataset, labels, sample_size):
@@ -426,4 +428,7 @@ run_test(clf1000, 'classifier1000')
 
 clf5000 = get_classifier(train_dataset, train_labels, 5000)
 run_test(clf5000, 'classifier5000')
+
+clf_all = get_classifier(train_dataset, train_labels, train_dataset.shape[0])
+run_test(clf_all, 'classifier_all')
 
