@@ -26,6 +26,7 @@ from scipy import ndimage
 from sklearn.linear_model import LogisticRegression
 from six.moves.urllib.request import urlretrieve
 from six.moves import cPickle as pickle
+from sklearn import metrics
 
 
 # First, we'll download the dataset to our local machine. The data consists of characters rendered in a variety of fonts on a 28x28 image. The labels are limited to 'A' through 'J' (10 classes). The training set has about 500k and the testset 19000 labelled examples. Given these sizes, it should be possible to train models quickly on any machine.
@@ -393,3 +394,36 @@ print 'sanitized test dataset shape', sanitized_test_dataset.shape
 # Optional question: train an off-the-shelf model on all the data!
 # 
 # ---
+
+# In[61]:
+
+
+def get_classifier(dataset, labels, sample_size):
+  train_n_dataset = dataset[:sample_size, :, :]
+  train_n_labels = labels[:sample_size]
+  # convert to 2d
+  train_n_dataset = train_n_dataset.reshape(sample_size, image_size * image_size)
+  model = LogisticRegression()
+  model.fit(train_n_dataset, train_n_labels)
+  
+  return model
+
+def run_test(classifier, test_name):
+ print 'Test result of classifier, ', test_name
+ test_dataset2d = test_dataset.reshape(test_dataset.shape[0], image_size * image_size)
+ predicted = classifier.predict(test_dataset2d)
+ print(metrics.classification_report(test_labels, predicted))
+ print 'accuracy ', 100 * classifier.score(test_dataset2d, test_labels), '%'
+    
+clf50 = get_classifier(train_dataset, train_labels, 50)
+run_test(clf50, 'classifier50')
+
+clf100 = get_classifier(train_dataset, train_labels, 100)
+run_test(clf100, 'classifier100')
+
+clf1000 = get_classifier(train_dataset, train_labels, 1000)
+run_test(clf1000, 'classifier1000')
+
+clf5000 = get_classifier(train_dataset, train_labels, 5000)
+run_test(clf5000, 'classifier5000')
+
