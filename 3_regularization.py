@@ -186,6 +186,34 @@ with tf.Session(graph=graph) as session:
 # 
 # ---
 
+# In[100]:
+
+num_steps = 3001
+
+with tf.Session(graph=graph) as session:
+  tf.initialize_all_variables().run()
+  print "Initialized"
+  for step in xrange(num_steps):
+    # Pick an offset within the training data, which has been randomized to a few batches.
+    # Note: we could use better randomization across epochs.
+    offset = np.random.choice(np.arange(10))
+    # Generate a minibatch.
+    batch_data = train_dataset[offset:(offset + batch_size), :]
+    batch_labels = train_labels[offset:(offset + batch_size), :]
+    # Prepare a dictionary telling the session where to feed the minibatch.
+    # The key of the dictionary is the placeholder node of the graph to be fed,
+    # and the value is the numpy array to feed to it.
+    feed_dict = {tf_train_dataset : batch_data, tf_train_labels : batch_labels}
+    _, l, predictions = session.run(
+      [optimizer, loss, train_prediction], feed_dict=feed_dict)
+    if (step % 500 == 0):
+      print "Minibatch loss at step", step, ":", l
+      print "Minibatch accuracy: %.1f%%" % accuracy(predictions, batch_labels)
+      print "Validation accuracy: %.1f%%" % accuracy(
+        valid_prediction.eval(), valid_labels)
+  print "Test accuracy: %.1f%%" % accuracy(test_prediction.eval(), test_labels)
+
+
 # ---
 # Problem 3
 # ---------
